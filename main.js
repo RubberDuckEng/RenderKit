@@ -1,26 +1,35 @@
 const ckLoaded = CanvasKitInit({
     locateFile: (file) => 'https://unpkg.com/canvaskit-wasm@0.19.0/bin/' + file
 });
-function fitCanvasToWindow() {
+
+function fitCanvasToWindow(devicePixelRatio) {
     let canvas = document.getElementById('display');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    canvas.width = width * devicePixelRatio;
+    canvas.height = width * devicePixelRatio;
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
 }
-ckLoaded.then((sk) => {
-    fitCanvasToWindow();
-    const surface = sk.MakeCanvasSurface('display');
 
-    let tree = new RenderBox();
-    let x = 0;
+function main() {
+    ckLoaded.then((sk) => {
+        const devicePixelRatio = window.devicePixelRatio;
+        fitCanvasToWindow(devicePixelRatio);
 
-    function drawFrame(canvas) {
-        canvas.clear(sk.BLUE);
-        x += 1;
-        let offset = new Offset(x, 50);
+        const surface = sk.MakeCanvasSurface('display');
+        let tree = new RenderBox();
 
-        tree.paint(sk, canvas, offset);
-        // surface.requestAnimationFrame(drawFrame);
-    }
+        function drawFrame(canvas) {
 
-    surface.requestAnimationFrame(drawFrame);
-});
+            canvas.clear(sk.BLUE);
+            let offset = new Offset(50, 50);
+            tree.paint(sk, canvas, offset);
+            // surface.requestAnimationFrame(drawFrame);
+        }
+
+        surface.requestAnimationFrame(drawFrame);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', main);

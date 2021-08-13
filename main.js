@@ -7,7 +7,7 @@ function fitCanvasToWindow(devicePixelRatio) {
     let width = window.innerWidth;
     let height = window.innerHeight;
     canvas.width = width * devicePixelRatio;
-    canvas.height = width * devicePixelRatio;
+    canvas.height = height * devicePixelRatio;
     canvas.style.width = width + 'px';
     canvas.style.height = height + 'px';
 }
@@ -17,18 +17,40 @@ function main() {
         const devicePixelRatio = window.devicePixelRatio;
         fitCanvasToWindow(devicePixelRatio);
 
-        const surface = sk.MakeCanvasSurface('display');
-        let tree = new RenderBox();
-
-        function drawFrame(canvas) {
-
-            canvas.clear(sk.BLUE);
-            let offset = new Offset(50, 50);
-            tree.paint(sk, canvas, offset);
-            // surface.requestAnimationFrame(drawFrame);
+        function requestFrame() {
+            surface.requestAnimationFrame(drawFrame);
         }
 
-        surface.requestAnimationFrame(drawFrame);
+        const surface = sk.MakeCanvasSurface('display');
+        let wnd = new Window(requestFrame);
+        let sizedBoxTop = new RenderSizedBox(new Size(200, 100));
+        let sizedBoxBottom = new RenderSizedBox(new Size(200, 100));
+        let tree = new RenderRoot(wnd,
+            new RenderTopAndBottom(sizedBoxTop, sizedBoxBottom)
+        );
+
+        tree.devicePixelRatio = window.devicePixelRatio;
+        sizedBoxTop.color = sk.Color4f(0, 1, 0, 1);
+        sizedBoxBottom.color = sk.Color4f(1, 1, 0, 1);
+
+        function drawFrame(canvas) {
+            let constraints = new BoxConstraints(0, window.innerWidth,
+                0, window.innerHeight);
+            tree.performLayout(constraints);
+
+            canvas.clear(sk.BLUE);
+            let offset = new Offset(0, 0);
+            tree.paint(sk, canvas, offset);
+        }
+
+        wnd.requestFrame();
+
+        function onClick() {
+            let size = new Size(sizedBoxTop.size.width, sizedBoxTop.size.height + 10);
+            sizedBoxTop.setPreferredSize(size);
+        }
+
+        document.addEventListener('click', onClick);
     });
 }
 

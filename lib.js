@@ -35,11 +35,11 @@ class BoxConstraints {
     }
 
     min() {
-        return Size(this.minWidth, this.minHeight);
+        return new Size(this.minWidth, this.minHeight);
     }
 
     max() {
-        return Size(this.maxWidth, this.maxHeight);
+        return new Size(this.maxWidth, this.maxHeight);
     }
 
     constrain(size) {
@@ -54,8 +54,8 @@ class BoxConstraints {
         if (height < this.minHeight) {
             height = this.minHeight;
         }
-        if (width > this.maxHeight) {
-            width = this.maxHeight;
+        if (height > this.maxHeight) {
+            height = this.maxHeight;
         }
         return new Size(width, height);
     }

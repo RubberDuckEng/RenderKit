@@ -60,6 +60,15 @@ class BoxConstraints {
         return new Size(width, height);
     }
 
+    with(minWidth, maxWidth, minHeight, maxHeight) {
+        return new BoxConstraints(
+            minWidth != null ? minWidth : this.minWidth,
+            maxWidth != null ? maxWidth : this.maxWidth,
+            minHeight != null ? minHeight : this.minHeight,
+            maxHeight != null ? maxHeight : this.maxHeight,
+        );
+    }
+
     trimHeigh(height) {
         let minHeight = this.minHeight - height;
         if (minHeight < 0) {
@@ -182,7 +191,6 @@ class RenderSizedBox extends RenderBox {
     }
 
     layout(constraints) {
-        console.log('RenderSizedBox');
         this.size = constraints.constrain(this.preferredSize);
     }
 
@@ -216,7 +224,8 @@ class RenderTopAndBottom extends RenderBox {
     }
 
     layout(constraints) {
-        this.top.performLayout(constraints);
+        let topConstraints = constraints.with(null, null, 0, null);
+        this.top.performLayout(topConstraints);
         this.top.offset = new Offset(0, 0);
 
         let bottomConstraints = constraints.trimHeigh(this.top.size.height);

@@ -222,6 +222,9 @@ class RenderTopAndBottom extends RenderBox {
         let bottomConstraints = constraints.trimHeigh(this.top.size.height);
         this.bottom.performLayout(bottomConstraints);
         this.bottom.offset = new Offset(0, this.top.size.height);
+
+        this.size = new Size(Math.max(this.top.width, this.bottom.width),
+            this.top.height + this.bottom.height);
     }
 
     paint(sk, canvas, offset) {

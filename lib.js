@@ -12,6 +12,14 @@ class Offset {
     add(other) {
         return new Offset(this.dx + other.dx, this.dy + other.dy);
     }
+
+    subtract(other) {
+        return new Offset(this.dx - other.dx, this.dy - other.dy);
+    }
+}
+
+class ClickEvent {
+
 }
 
 class Size {
@@ -28,10 +36,10 @@ class Size {
 
 class BoxConstraints {
     constructor(minWidth, maxWidth, minHeight, maxHeight) {
-        this.minWidth;
-        this.maxWidth;
-        this.minHeight;
-        this.maxHeight;
+        this.minWidth = minWidth;
+        this.maxWidth = maxWidth;
+        this.minHeight = minHeight;
+        this.maxHeight = maxHeight;
     }
 
     min() {
@@ -69,7 +77,7 @@ class BoxConstraints {
         );
     }
 
-    trimHeigh(height) {
+    trimHeight(height) {
         let minHeight = this.minHeight - height;
         if (minHeight < 0) {
             minHeight = 0;
@@ -79,6 +87,13 @@ class BoxConstraints {
             maxHeight = minHeight;
         }
         return new BoxConstraints(this.minWidth, this.maxWidth, minHeight, maxHeight);
+    }
+
+    equals(other) {
+        return this.minWidth == other.minWidth
+            && this.maxWidth == other.maxWidth
+            && this.minHeight == other.minHeight
+            && this.maxHeight == other.maxHeight;
     }
 }
 
@@ -98,6 +113,7 @@ class RenderBox {
         this.size = new Size(0, 0);
         this.needsLayout = true;
         this.parent = null;
+        this.constraints = new BoxConstraints(0, 0, 0, 0);
     }
 
     markNeedsLayout() {
@@ -112,15 +128,31 @@ class RenderBox {
     }
 
     performLayout(constraints) {
-        if (!this.needsLayout) {
+        if (!this.needsLayout && this.constraints.equals(constraints)) {
             return;
         }
         this.needsLayout = false;
         this.layout(constraints);
+        this.constraints = constraints;
     }
 
     layout(constraints) {
         this.size = constraints.min();
+    }
+
+    hitTest(offset) {
+        if (this.hitTestSelf(offset)) {
+            return this;
+        }
+        return null;
+    }
+
+    hitTestSelf(offset) {
+        return false;
+    }
+
+    handleEvent(event) {
+        return false;
     }
 
     paint(sk, canvas, offset) {
@@ -131,6 +163,14 @@ class RenderSingleChildBox extends RenderBox {
     constructor(child) {
         super();
         this.setChild(child);
+    }
+
+    hitTest(offset) {
+        let hit = this.child.hitTest(offset);
+        if (hit != null) {
+            return hit;
+        }
+        super.hitTest(offset);
     }
 
     setChild(child) {
@@ -168,6 +208,16 @@ class RenderRoot extends RenderSingleChildBox {
         canvas.save();
         canvas.scale(this.devicePixelRatio, this.devicePixelRatio);
         this.child.paint(sk, canvas, offset);
+
+        let paint = new sk.Paint();
+        paint.setColor(sk.Color4f(1, 0, 0, 1));
+        paint.setStyle(sk.PaintStyle.Stroke);
+        paint.setStrokeWidth(2);
+        paint.setAntiAlias(true);
+        let rect = sk.LTRBRect(offset.dx, offset.dy,
+            offset.dx + this.size.width, offset.dy + this.size.height);
+        canvas.drawRect(rect, paint);
+
         canvas.restore();
     }
 }
@@ -192,6 +242,17 @@ class RenderSizedBox extends RenderBox {
 
     layout(constraints) {
         this.size = constraints.constrain(this.preferredSize);
+    }
+
+    hitTestSelf(offset) {
+        return offset.dx >= 0 && offset.dx < this.size.width &&
+            offset.dy >= 0 && offset.dy < this.size.height;
+    }
+
+    handleEvent(event) {
+        let size = new Size(this.size.width, this.size.height + 10);
+        this.setPreferredSize(size)
+        return true;
     }
 
     paint(sk, canvas, offset) {
@@ -223,17 +284,30 @@ class RenderTopAndBottom extends RenderBox {
         this.markNeedsLayout();
     }
 
+    hitTest(offset) {
+        let adjusted = offset.subtract(this.bottom.offset);
+        let hit = this.bottom.hitTest(adjusted);
+        if (hit != null) {
+            return hit;
+        }
+        hit = this.top.hitTest(offset);
+        if (hit != null) {
+            return hit;
+        }
+        super.hitTest(offset);
+    }
+
     layout(constraints) {
         let topConstraints = constraints.with(null, null, 0, null);
         this.top.performLayout(topConstraints);
         this.top.offset = new Offset(0, 0);
 
-        let bottomConstraints = constraints.trimHeigh(this.top.size.height);
+        let bottomConstraints = constraints.trimHeight(this.top.size.height);
         this.bottom.performLayout(bottomConstraints);
         this.bottom.offset = new Offset(0, this.top.size.height);
 
-        this.size = new Size(Math.max(this.top.width, this.bottom.width),
-            this.top.height + this.bottom.height);
+        let width = Math.max(this.top.size.width, this.bottom.size.width);
+        this.size = new Size(width, this.top.size.height + this.bottom.size.height);
     }
 
     paint(sk, canvas, offset) {

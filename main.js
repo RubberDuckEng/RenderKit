@@ -35,7 +35,7 @@ function main() {
 
         function drawFrame(canvas) {
             let constraints = new BoxConstraints(0, window.innerWidth,
-                0, window.innerHeight);
+                0, window.innerHeight / 2);
             tree.performLayout(constraints);
 
             canvas.clear(sk.BLUE);
@@ -45,9 +45,14 @@ function main() {
 
         wnd.requestFrame();
 
-        function onClick() {
-            let size = new Size(sizedBoxTop.size.width, sizedBoxTop.size.height + 10);
-            sizedBoxTop.setPreferredSize(size);
+        function onClick(event) {
+            let offset = new Offset(event.x, event.y);
+            let box = tree.hitTest(offset);
+            if (box) {
+                box.handleEvent(new ClickEvent());
+            }
+            // let size = new Size(sizedBoxTop.size.width, sizedBoxTop.size.height + 10);
+            // box.setPreferredSize(size);
         }
 
         document.addEventListener('click', onClick);
